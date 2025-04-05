@@ -30,16 +30,127 @@ const storage = multer.diskStorage({
     const uploadDir = 'uploads/';
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  }
+});
+
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    console.log('File being processed:', file.originalname, 'Mimetype:', file.mimetype);
+    
+    // Check file extension
+    const ext = path.extname(file.originalname).toLowerCase();
+    const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+    
+    if (validExtensions.includes(ext) || 
+        file.mimetype.startsWith('image/') || 
+        file.mimetype === 'application/octet-stream') {
+      console.log('File accepted:', file.originalname);
+      cb(null, true);
+    } else {
+      console.log('File rejected. Extension:', ext, 'Mimetype:', file.mimetype);
+      if (file.fieldname === 'photo' && !req.body.requirePhoto) {
+        console.log('Photo field is optional, continuing without file');
+        cb(null, false);
+      } else {
+        cb(new Error(`Invalid file type. Allowed extensions are: ${validExtensions.join(', ')}`));
+      }
+    }
+  }
+});
+
+// Connect to MongoDB
+mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://miyomiapp:Miyomi%402025@cluster0.scy60.mongodb.net/teachers', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('MongoDB connected'))
+.catch(err => console.error('MongoDB connection error:', err));
+
+// API Routes
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    message: 'Server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Create a new teacher with all details
+app.post('/api/teachers', upload.single('photo'), async (req, res) => {
+  try {
+    const { personal, career, family, subject } = req.body;
+    
+    // Parse JSON if received as strings
+    const personalData = typeof personal === 'string' ? JSON.parse(personal) : personal;
+    const careerData = typeof career === 'string' ? JSON.parse(career) : career;
+    const familyData = typeof family === 'string' ? JSON.parse(family) : family;
+    const subjectData = typeof subject === 'string' ? JSON.parse(subject) : subject;
+    
+    // Generate a teacher ID (you can customize this logic)
+    const teacherId = `TCH${Date.now().toString().slice(-6)}`;
+    
+    // Create teacher personal info
+    const newTeacherPersonal = new TeacherPersonal({
+      ...personalData,
+      teacherId,
+      photo: req.file ? `/uploads/${req.file.filename}` : null
+    });
+    await newTeacherPersonal.save();
+    
+    // Create teacher career info
+    const newTeacherCareer = new TeacherCareer({
+      ...careerData,
+      teacherId
+    });
+    await newTeacherCareer.save();
+    
+    // Create teacher family info
+    const newTeacherFamily = new TeacherFamily({
+      ...familyData,
+      teacherId
+    });
+    await newTeacherFamily.save();
+    
+    // Create teacher subject info
+    const newTeacherSubject = new TeacherSubject({
+      ...subjectData,
+      teacherId
+    });
+    await newTeacherSubject.save();
+    
+    res.status(201).json({
+      success: true,
+      message: 'Teacher created successfully',
+      teacherId
+    });
+  } catch (error) {
+    console.error('Error creating teacher:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create teacher',
+      error: error.message
+    });
+  }
+});
 
 // Search teachers
 app.get('/api/teachers/search', async (req, res) => {
   try {
-    const { id, name, appointmentDate } = req.query;
+    const { nicNo, name, appointmentDate } = req.query;
     
     const query = {};
     
-    if (id) {
-      query.teacherId = { $regex: id, $options: 'i' };
+    if (nicNo) {
+      query.nicNo = { $regex: nicNo, $options: 'i' };
     }
     
     if (name) {
@@ -261,95 +372,8 @@ app.delete('/api/teachers/:id', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 9000;
 // Make sure it's binding to all interfaces (0.0.0.0), not just localhost
 app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
 
 module.exports = app;
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  }
-});
-
-const upload = multer({ 
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
-    }
-  }
-});
-
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://miyomiapp:Miyomi%402025@cluster0.scy60.mongodb.net/teachers', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log('MongoDB connected'))
-.catch(err => console.error('MongoDB connection error:', err));
-
-// API Routes
-
-// Create a new teacher with all details
-app.post('/api/teachers', upload.single('photo'), async (req, res) => {
-  try {
-    const { personal, career, family, subject } = req.body;
-    
-    // Parse JSON if received as strings
-    const personalData = typeof personal === 'string' ? JSON.parse(personal) : personal;
-    const careerData = typeof career === 'string' ? JSON.parse(career) : career;
-    const familyData = typeof family === 'string' ? JSON.parse(family) : family;
-    const subjectData = typeof subject === 'string' ? JSON.parse(subject) : subject;
-    
-    // Generate a teacher ID (you can customize this logic)
-    const teacherId = `TCH${Date.now().toString().slice(-6)}`;
-    
-    // Create teacher personal info
-    const newTeacherPersonal = new TeacherPersonal({
-      ...personalData,
-      teacherId,
-      photo: req.file ? `/uploads/${req.file.filename}` : null
-    });
-    await newTeacherPersonal.save();
-    
-    // Create teacher career info
-    const newTeacherCareer = new TeacherCareer({
-      ...careerData,
-      teacherId
-    });
-    await newTeacherCareer.save();
-    
-    // Create teacher family info
-    const newTeacherFamily = new TeacherFamily({
-      ...familyData,
-      teacherId
-    });
-    await newTeacherFamily.save();
-    
-    // Create teacher subject info
-    const newTeacherSubject = new TeacherSubject({
-      ...subjectData,
-      teacherId
-    });
-    await newTeacherSubject.save();
-    
-    res.status(201).json({
-      success: true,
-      message: 'Teacher created successfully',
-      teacherId
-    });
-  } catch (error) {
-    console.error('Error creating teacher:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create teacher',
-      error: error.message
-    });
-  }
-});

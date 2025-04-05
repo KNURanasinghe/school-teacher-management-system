@@ -872,9 +872,11 @@ class _AddTeacherScreenState extends State<AddTeacherScreen>
                                         setState(() {});
                                       }
                                     },
+                                    //TODO
                                     child: AbsorbPointer(
                                       child: TextFormField(
-                                        initialValue: school['appointmentDate'],
+                                        controller: TextEditingController(
+                                            text: school['appointmentDate']),
                                         decoration: const InputDecoration(
                                           labelText: 'Appointment Date',
                                           border: OutlineInputBorder(),
@@ -906,7 +908,8 @@ class _AddTeacherScreenState extends State<AddTeacherScreen>
                                     },
                                     child: AbsorbPointer(
                                       child: TextFormField(
-                                        initialValue: school['endDate'],
+                                        controller: TextEditingController(
+                                            text: school['endDate']),
                                         decoration: const InputDecoration(
                                           labelText: 'End Date',
                                           border: OutlineInputBorder(),

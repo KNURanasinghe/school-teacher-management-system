@@ -121,7 +121,7 @@ class _TeacherSearchScreenState extends State<TeacherSearchScreen> {
     try {
       String queryString = '?';
       if (_idController.text.isNotEmpty) {
-        queryString += 'id=${_idController.text}&';
+        queryString += 'nicNo=${_idController.text}&';
       }
       if (_nameController.text.isNotEmpty) {
         queryString += 'name=${_nameController.text}&';
@@ -259,14 +259,20 @@ class _TeacherSearchScreenState extends State<TeacherSearchScreen> {
                           final teacher = _teachers[index];
                           return TeacherListItem(
                             teacher: teacher,
-                            onTap: () {
-                              Navigator.push(
+                            onTap: () async {
+                              final result = await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => TeacherDetailScreen(
                                       teacherId: teacher['teacherId']),
                                 ),
                               );
+                              if (result == true) {
+                                // Call your refresh method here, e.g.:
+                                setState(() {
+                                  _fetchAllTeachers();
+                                });
+                              }
                             },
                           );
                         },
@@ -478,7 +484,7 @@ class _TeacherDetailScreenState extends State<TeacherDetailScreen> {
           // Show success with file location
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('PDF saved to ${dirName} folder in Downloads'),
+              content: Text('PDF saved to $dirName folder in Downloads'),
               duration: const Duration(seconds: 5),
               action: SnackBarAction(
                 label: 'OPEN',
@@ -510,6 +516,68 @@ class _TeacherDetailScreenState extends State<TeacherDetailScreen> {
     } finally {
       setState(() {
         _downloadingPdf = false;
+      });
+    }
+  }
+
+  Future<void> _deleteTeacher() async {
+    // Ask for confirmation before deleting
+    final bool confirmDelete = await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Delete Teacher'),
+            content: const Text(
+                'Are you sure you want to delete this teacher? This action cannot be undone.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!confirmDelete) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await http.delete(
+        Uri.parse('http://82.25.180.4:9000/api/teachers/${widget.teacherId}'),
+      );
+
+      if (response.statusCode == 200) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Teacher deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Return to previous screen with result to refresh list
+        Navigator.of(context).pop(true);
+      } else {
+        // Show error message
+        final responseData = json.decode(response.body);
+        _showErrorSnackBar(
+            'Failed to delete teacher: ${responseData['message'] ?? 'Unknown error'}');
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      _showErrorSnackBar('Error: $e');
+      setState(() {
+        _isLoading = false;
       });
     }
   }
@@ -551,6 +619,13 @@ class _TeacherDetailScreenState extends State<TeacherDetailScreen> {
               icon: const Icon(Icons.picture_as_pdf),
               tooltip: 'Download PDF',
               onPressed: _downloadPdf,
+            ),
+          if (!_isLoading)
+            IconButton(
+              icon: const Icon(Icons.delete),
+              tooltip: 'Delete Teacher',
+              onPressed: _deleteTeacher,
+              color: Colors.red,
             ),
         ],
       ),
