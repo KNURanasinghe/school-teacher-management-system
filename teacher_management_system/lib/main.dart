@@ -1,125 +1,789 @@
+// main.dart
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:intl/intl.dart';
+import 'package:flutter_downloader/flutter_downloader.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:open_file/open_file.dart';
+import 'dart:io';
 
-void main() {
+import 'package:teacher_management_system/add_teacher.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await FlutterDownloader.initialize();
+
+  // Register callback for download progress tracking
+  FlutterDownloader.registerCallback(downloadCallback);
+
   runApp(const MyApp());
+}
+
+@pragma('vm:entry-point')
+void downloadCallback(String id, int status, int progress) {
+  // This callback handles download progress updates
+  // It must be a top-level or static function
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Teacher Management System',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const TeacherSearchScreen(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class TeacherSearchScreen extends StatefulWidget {
+  const TeacherSearchScreen({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  _TeacherSearchScreenState createState() => _TeacherSearchScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _TeacherSearchScreenState extends State<TeacherSearchScreen> {
+  final TextEditingController _idController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _appointmentDateController =
+      TextEditingController();
+  DateTime? _selectedDate;
+  List<dynamic> _teachers = [];
+  bool _isLoading = false;
 
-  void _incrementCounter() {
+  @override
+  void initState() {
+    super.initState();
+    _fetchAllTeachers(); // Load all teachers initially
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(1970),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+        _appointmentDateController.text =
+            DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  Future<void> _fetchAllTeachers() async {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      _isLoading = true;
     });
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://82.25.180.4:9000/api/teachers/search'),
+      );
+
+      if (response.statusCode == 200) {
+        print('Response: ${response.body}'); // Debugging line
+        final data = json.decode(response.body);
+        setState(() {
+          _teachers = data['data'];
+          _isLoading = false;
+        });
+      } else {
+        _showErrorSnackBar('Failed to fetch teachers');
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error: $e'); // Debugging line
+      _showErrorSnackBar('Error: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _searchTeachers() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      String queryString = '?';
+      if (_idController.text.isNotEmpty) {
+        queryString += 'id=${_idController.text}&';
+      }
+      if (_nameController.text.isNotEmpty) {
+        queryString += 'name=${_nameController.text}&';
+      }
+      if (_appointmentDateController.text.isNotEmpty) {
+        queryString += 'appointmentDate=${_appointmentDateController.text}';
+      }
+
+      final response = await http.get(
+        Uri.parse('http://82.25.180.4:9000/api/teachers/search$queryString'),
+      );
+
+      if (response.statusCode == 200) {
+        print('Search Response: ${response.body}'); // Debugging line
+        final data = json.decode(response.body);
+        setState(() {
+          _teachers = data['data'];
+          _isLoading = false;
+        });
+      } else {
+        _showErrorSnackBar('Search failed');
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Search Error: $e'); // Debugging line
+      _showErrorSnackBar('Error: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  void _clearSearch() {
+    setState(() {
+      _idController.clear();
+      _nameController.clear();
+      _appointmentDateController.clear();
+      _selectedDate = null;
+    });
+    _fetchAllTeachers();
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: const Text('Teacher Management System'),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Card(
+              elevation: 4,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Search Teachers',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _idController,
+                      decoration: const InputDecoration(
+                        labelText: 'Teacher ID',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Teacher Name',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    GestureDetector(
+                      onTap: () => _selectDate(context),
+                      child: AbsorbPointer(
+                        child: TextField(
+                          controller: _appointmentDateController,
+                          decoration: const InputDecoration(
+                            labelText: 'Appointment Date',
+                            border: OutlineInputBorder(),
+                            suffixIcon: Icon(Icons.calendar_today),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: _searchTeachers,
+                          icon: const Icon(Icons.search),
+                          label: const Text('Search'),
+                        ),
+                        TextButton.icon(
+                          onPressed: _clearSearch,
+                          icon: const Icon(Icons.clear),
+                          label: const Text('Clear'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _teachers.isEmpty
+                    ? const Center(child: Text('No teachers found'))
+                    : ListView.builder(
+                        itemCount: _teachers.length,
+                        itemBuilder: (context, index) {
+                          final teacher = _teachers[index];
+                          return TeacherListItem(
+                            teacher: teacher,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => TeacherDetailScreen(
+                                      teacherId: teacher['teacherId']),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          // Navigate to add teacher screen and wait for result
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddTeacherScreen(),
+            ),
+          );
+
+          // If result is true (teacher was added successfully), refresh the teacher list
+          if (result == true) {
+            _fetchAllTeachers();
+          }
+        },
+        tooltip: 'Add New Teacher',
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class TeacherListItem extends StatelessWidget {
+  final dynamic teacher;
+  final VoidCallback onTap;
+
+  const TeacherListItem({
+    super.key,
+    required this.teacher,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: ListTile(
+        leading: teacher['photo'] != null
+            ? CircleAvatar(
+                backgroundImage:
+                    NetworkImage('http://82.25.180.4:9000${teacher['photo']}'),
+                onBackgroundImageError: (_, __) => const Icon(Icons.person),
+              )
+            : const CircleAvatar(child: Icon(Icons.person)),
+        title: Text('${teacher['nameWithInitials']}'),
+        subtitle: Text('ID: ${teacher['teacherId']}'),
+        trailing: const Icon(Icons.arrow_forward_ios),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+class TeacherDetailScreen extends StatefulWidget {
+  final String teacherId;
+
+  const TeacherDetailScreen({
+    super.key,
+    required this.teacherId,
+  });
+
+  @override
+  _TeacherDetailScreenState createState() => _TeacherDetailScreenState();
+}
+
+class _TeacherDetailScreenState extends State<TeacherDetailScreen> {
+  bool _isLoading = true;
+  Map<String, dynamic> _teacherData = {};
+  bool _downloadingPdf = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchTeacherDetails();
+  }
+
+  Future<void> _fetchTeacherDetails() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://82.25.180.4:9000/api/teachers/${widget.teacherId}'),
+      );
+
+      if (response.statusCode == 200) {
+        print('Teacher Details Response: ${response.body}'); // Debugging line
+        final data = json.decode(response.body);
+        setState(() {
+          _teacherData = data['data'];
+          _isLoading = false;
+        });
+      } else {
+        _showErrorSnackBar('Failed to fetch teacher details');
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error: $e'); // Debugging line
+      _showErrorSnackBar('Error: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  Future<void> _downloadPdf() async {
+    if (_downloadingPdf) return;
+
+    setState(() {
+      _downloadingPdf = true;
+    });
+
+    try {
+      // Check for storage permission
+      if (!await _checkPermission()) {
+        setState(() {
+          _downloadingPdf = false;
+        });
+        _showErrorSnackBar('Storage permission denied');
+        return;
+      }
+
+      // Show download starting notification
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Downloading PDF...')),
+      );
+
+      // Properly encode the teacher ID in the URL
+      final teacherId = Uri.encodeComponent(widget.teacherId);
+      final downloadUrl = 'http://82.25.180.4:9000/api/teachers/$teacherId/pdf';
+
+      // Try to use the standard Download directory first
+      Directory? saveDir;
+      String dirName = "TeacherPDFs";
+
+      if (Platform.isAndroid) {
+        try {
+          // Try standard Downloads folder first (most accessible)
+          saveDir = Directory('/storage/emulated/0/Download/$dirName');
+          if (!await saveDir.exists()) {
+            await saveDir.create(recursive: true);
+          }
+        } catch (e) {
+          print('Could not use Downloads directory: $e');
+
+          // Fall back to external storage
+          final externalDir = await getExternalStorageDirectory();
+          if (externalDir != null) {
+            saveDir = Directory('${externalDir.path}/$dirName');
+            if (!await saveDir.exists()) {
+              await saveDir.create(recursive: true);
+            }
+          }
+        }
+      } else {
+        // For iOS, use documents directory
+        final docsDir = await getApplicationDocumentsDirectory();
+        saveDir = Directory('${docsDir.path}/$dirName');
+        if (!await saveDir.exists()) {
+          await saveDir.create(recursive: true);
+        }
+      }
+
+      if (saveDir == null) {
+        _showErrorSnackBar('Could not create download directory');
+        setState(() {
+          _downloadingPdf = false;
+        });
+        return;
+      }
+
+      // Create a more meaningful filename
+      final dateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final fileName = 'Teacher_${widget.teacherId}_$dateStr.pdf';
+      final filePath = '${saveDir.path}/$fileName';
+
+      print('Download URL: $downloadUrl');
+      print('Save directory: ${saveDir.path}');
+      print('File will be saved as: $filePath');
+
+      // Direct HTTP download
+      try {
+        final response = await http.get(Uri.parse(downloadUrl));
+
+        if (response.statusCode == 200) {
+          // Save the file
+          final file = File(filePath);
+          await file.writeAsBytes(response.bodyBytes);
+
+          // Show success with file location
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('PDF saved to ${dirName} folder in Downloads'),
+              duration: const Duration(seconds: 5),
+              action: SnackBarAction(
+                label: 'OPEN',
+                onPressed: () async {
+                  try {
+                    final result = await OpenFile.open(filePath);
+                    if (result.type != ResultType.done) {
+                      _showErrorSnackBar(
+                          'Could not open PDF: ${result.message}');
+                    }
+                  } catch (e) {
+                    _showErrorSnackBar('Error opening file: $e');
+                  }
+                },
+              ),
+            ),
+          );
+        } else {
+          _showErrorSnackBar(
+              'Failed to download PDF: HTTP ${response.statusCode}');
+        }
+      } catch (e) {
+        print('Download error: $e');
+        _showErrorSnackBar('Error downloading PDF: $e');
+      }
+    } catch (e) {
+      print('Download error: $e');
+      _showErrorSnackBar('Error downloading PDF: $e');
+    } finally {
+      setState(() {
+        _downloadingPdf = false;
+      });
+    }
+  }
+
+// Update permission check for Android 13+
+  Future<bool> _checkPermission() async {
+    if (Platform.isAndroid) {
+      // For Android 13 (API level 33) and above
+      if (await Permission.storage.isGranted ||
+          await Permission.manageExternalStorage.isGranted) {
+        return true;
+      } else {
+        // Request permission
+        var storageStatus = await Permission.storage.request();
+
+        // On newer Android versions, might need additional permissions
+        if (storageStatus.isGranted) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    } else {
+      // For iOS, we don't need explicit permission for downloads to app documents
+      return true;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: _isLoading
+            ? const Text('Teacher Details')
+            : Text('${_teacherData['personal']['nameWithInitials']}'),
+        actions: [
+          if (!_isLoading)
+            IconButton(
+              icon: const Icon(Icons.picture_as_pdf),
+              tooltip: 'Download PDF',
+              onPressed: _downloadPdf,
+            ),
+        ],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Personal Information Card
+                  _buildSectionCard(
+                    'Personal Information',
+                    [
+                      _buildInfoRow(
+                          'Teacher ID', _teacherData['personal']['teacherId']),
+                      _buildInfoRow(
+                          'NIC Number', _teacherData['personal']['nicNo']),
+                      _buildInfoRow(
+                          'Full Name', _teacherData['personal']['fullName']),
+                      _buildInfoRow(
+                          'Gender', _teacherData['personal']['gender']),
+                      _buildInfoRow(
+                        'Date of Birth',
+                        DateFormat('yyyy-MM-dd').format(
+                          DateTime.parse(_teacherData['personal']['birthDate']),
+                        ),
+                      ),
+                      _buildInfoRow(
+                        'Marital Status',
+                        _teacherData['personal']['isMarried']
+                            ? 'Married'
+                            : 'Single',
+                      ),
+                      _buildInfoRow(
+                          'Address', _teacherData['personal']['address']),
+                      _buildInfoRow(
+                          'Mobile', _teacherData['personal']['mobileNumber']),
+                      if (_teacherData['personal']['whatsappNumber'] != null)
+                        _buildInfoRow(
+                          'WhatsApp',
+                          _teacherData['personal']['whatsappNumber'],
+                        ),
+                    ],
+                    photoUrl: _teacherData['personal']['photo'] != null
+                        ? 'http://82.25.180.4:9000${_teacherData['personal']['photo']}'
+                        : null,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Career Information Card
+                  _buildSectionCard(
+                    'Career Information',
+                    [
+                      _buildInfoRow(
+                          'AL Stream',
+                          _teacherData['career']['alStream'] ??
+                              'Not specified'),
+                      _buildInfoRow(
+                        'Appointment Type',
+                        _teacherData['career']['appointmentType'] ??
+                            'Not specified',
+                      ),
+                      _buildInfoRow(
+                        'Education',
+                        _teacherData['career']
+                                ['highestEducationQualification'] ??
+                            'Not specified',
+                      ),
+                      _buildInfoRow(
+                        'Vocational Training',
+                        _teacherData['career']['highestVocationalTraining'] ??
+                            'Not specified',
+                      ),
+                      _buildInfoRow(
+                        'Training Institute',
+                        _teacherData['career']['instituteOfTraining'] ??
+                            'Not specified',
+                      ),
+                      if (_teacherData['career']['firstAppointmentDate'] !=
+                          null)
+                        _buildInfoRow(
+                          'First Appointment',
+                          DateFormat('yyyy-MM-dd').format(
+                            DateTime.parse(
+                                _teacherData['career']['firstAppointmentDate']),
+                          ),
+                        ),
+                      _buildInfoRow(
+                        'Current Grade',
+                        _teacherData['career']['currentServiceGrade'] ??
+                            'Not specified',
+                      ),
+                      if (_teacherData['career']
+                              ['currentSchoolAppointmentDate'] !=
+                          null)
+                        _buildInfoRow(
+                          'Current School Since',
+                          DateFormat('yyyy-MM-dd').format(
+                            DateTime.parse(_teacherData['career']
+                                ['currentSchoolAppointmentDate']),
+                          ),
+                        ),
+                      if (_teacherData['career']['retirementDate'] != null)
+                        _buildInfoRow(
+                          'Retirement Date',
+                          DateFormat('yyyy-MM-dd').format(
+                            DateTime.parse(
+                                _teacherData['career']['retirementDate']),
+                          ),
+                        ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Family Information Card
+                  _buildSectionCard(
+                    'Family Information',
+                    [
+                      _buildInfoRow(
+                        'Kaalaathraya Name',
+                        _teacherData['family']['kalaathrayaName'] ??
+                            'Not specified',
+                      ),
+                      _buildInfoRow(
+                        'Kaalaathraya Mobile',
+                        _teacherData['family']['kalaathrayaMobileNumber'] ??
+                            'Not specified',
+                      ),
+                      _buildInfoRow(
+                        'Kaalaathraya Job',
+                        _teacherData['family']['kalaathrayaJob'] ??
+                            'Not specified',
+                      ),
+                      _buildInfoRow(
+                        'Workplace Address',
+                        _teacherData['family']['kalaathrayaWorkplaceAddress'] ??
+                            'Not specified',
+                      ),
+                      _buildInfoRow(
+                        'Children Count',
+                        _teacherData['family']['childrenCount']?.toString() ??
+                            '0',
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Subject Information Card
+                  _buildSectionCard(
+                    'Subject Information',
+                    [
+                      _buildInfoRow(
+                        'Appointed Subject',
+                        _teacherData['subject']['appointedSubject'] ??
+                            'Not specified',
+                      ),
+                      _buildInfoRow(
+                        'Current Teaching Subjects',
+                        (_teacherData['subject']['currentTeachingSubjects']
+                                    as List<dynamic>?)
+                                ?.join(', ') ??
+                            'None',
+                      ),
+                      _buildInfoRow(
+                        'Interested Subjects',
+                        (_teacherData['subject']['interestedTeachingSubjects']
+                                    as List<dynamic>?)
+                                ?.join(', ') ??
+                            'None',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+
+  Widget _buildSectionCard(String title, List<Widget> children,
+      {String? photoUrl}) {
+    return Card(
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                if (photoUrl != null)
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundImage: NetworkImage(photoUrl),
+                    onBackgroundImageError: (_, __) => const Icon(Icons.person),
+                  ),
+              ],
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
+            const Divider(),
+            ...children,
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 130,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          Expanded(
+            child: Text(value),
+          ),
+        ],
+      ),
     );
   }
 }

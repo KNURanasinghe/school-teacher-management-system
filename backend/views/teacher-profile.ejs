@@ -1,0 +1,317 @@
+<!-- views/teacher-profile.ejs -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Teacher Profile - <%= personal.fullName %></title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      border-bottom: 2px solid #3498db;
+      padding-bottom: 10px;
+    }
+    .profile-section {
+      margin-bottom: 30px;
+    }
+    .section-title {
+      background-color: #3498db;
+      color: white;
+      padding: 8px 15px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+    }
+    .profile-photo {
+      float: right;
+      width: 150px;
+      height: auto;
+      border: 1px solid #ddd;
+      margin-left: 20px;
+      margin-bottom: 20px;
+    }
+    .info-row {
+      margin-bottom: 10px;
+      display: flex;
+    }
+    .info-label {
+      font-weight: bold;
+      width: 250px;
+    }
+    .info-value {
+      flex: 1;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+    th, td {
+      padding: 8px 12px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .page-break {
+      page-break-after: always;
+      height: 0;
+      display: block;
+    }
+    footer {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 0.8em;
+      color: #777;
+      border-top: 1px solid #ddd;
+      padding-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Teacher Profile</h1>
+      <p>Generated on: <%= new Date().toLocaleDateString() %></p>
+    </div>
+
+    <!-- Personal Information -->
+    <div class="profile-section">
+      <h2 class="section-title">Personal Information</h2>
+      
+      <% if (personal.photo) { %>
+        <img class="profile-photo" src="<%= serverUrl %><%= personal.photo %>" alt="Teacher Photo">
+      <% } %>
+      
+      <div class="info-row">
+        <div class="info-label">Teacher ID:</div>
+        <div class="info-value"><%= personal.teacherId %></div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">NIC Number:</div>
+        <div class="info-value"><%= personal.nicNo %></div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Full Name:</div>
+        <div class="info-value"><%= personal.fullName %></div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Name with Initials:</div>
+        <div class="info-value"><%= personal.nameWithInitials %></div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Gender:</div>
+        <div class="info-value"><%= personal.gender %></div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Date of Birth:</div>
+        <div class="info-value"><%= new Date(personal.birthDate).toLocaleDateString() %></div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Marital Status:</div>
+        <div class="info-value"><%= personal.isMarried ? 'Married' : 'Single' %></div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Address:</div>
+        <div class="info-value"><%= personal.address %></div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Mobile Number:</div>
+        <div class="info-value"><%= personal.mobileNumber %></div>
+      </div>
+      
+      <% if (personal.whatsappNumber) { %>
+      <div class="info-row">
+        <div class="info-label">WhatsApp Number:</div>
+        <div class="info-value"><%= personal.whatsappNumber %></div>
+      </div>
+      <% } %>
+    </div>
+
+    <!-- Career Information -->
+    <div class="profile-section">
+      <h2 class="section-title">Career Information</h2>
+      
+      <div class="info-row">
+        <div class="info-label">AL Stream:</div>
+        <div class="info-value"><%= career.alStream || 'Not specified' %></div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Appointment Type:</div>
+        <div class="info-value"><%= career.appointmentType || 'Not specified' %></div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Highest Education Qualification:</div>
+        <div class="info-value"><%= career.highestEducationQualification || 'Not specified' %></div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Highest Vocational Training:</div>
+        <div class="info-value"><%= career.highestVocationalTraining || 'Not specified' %></div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Institute of Training:</div>
+        <div class="info-value"><%= career.instituteOfTraining || 'Not specified' %></div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">First Appointment Date:</div>
+        <div class="info-value"><%= career.firstAppointmentDate ? new Date(career.firstAppointmentDate).toLocaleDateString() : 'Not specified' %></div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Current Service Grade:</div>
+        <div class="info-value"><%= career.currentServiceGrade || 'Not specified' %></div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Current School Appointment Date:</div>
+        <div class="info-value"><%= career.currentSchoolAppointmentDate ? new Date(career.currentSchoolAppointmentDate).toLocaleDateString() : 'Not specified' %></div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Retirement Date:</div>
+        <div class="info-value"><%= career.retirementDate ? new Date(career.retirementDate).toLocaleDateString() : 'Not specified' %></div>
+      </div>
+      
+      <% if (career.previousSchools && career.previousSchools.length > 0) { %>
+        <h3>Previous Schools</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>School Name</th>
+              <th>From</th>
+              <th>To</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% career.previousSchools.forEach(function(school) { %>
+              <tr>
+                <td><%= school.schoolName %></td>
+                <td><%= school.appointmentDate ? new Date(school.appointmentDate).toLocaleDateString() : 'N/A' %></td>
+                <td><%= school.endDate ? new Date(school.endDate).toLocaleDateString() : 'N/A' %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      <% } %>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- Family Information -->
+    <div class="profile-section">
+      <h2 class="section-title">Family Information</h2>
+      
+      <div class="info-row">
+        <div class="info-label">Kaalaathraya Name:</div>
+        <div class="info-value"><%= family.kalaathrayaName || 'Not specified' %></div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Kaalaathraya Mobile Number:</div>
+        <div class="info-value"><%= family.kalaathrayaMobileNumber || 'Not specified' %></div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Kaalaathraya Job:</div>
+        <div class="info-value"><%= family.kalaathrayaJob || 'Not specified' %></div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Kaalaathraya Workplace Address:</div>
+        <div class="info-value"><%= family.kalaathrayaWorkplaceAddress || 'Not specified' %></div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Number of Children:</div>
+        <div class="info-value"><%= family.childrenCount || 0 %></div>
+      </div>
+      
+      <% if (family.children && family.children.length > 0) { %>
+        <h3>Children</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Age</th>
+              <th>Education</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% family.children.forEach(function(child) { %>
+              <tr>
+                <td><%= child.name %></td>
+                <td><%= child.age %></td>
+                <td><%= child.education || 'N/A' %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      <% } %>
+    </div>
+
+    <!-- Subject Information -->
+    <div class="profile-section">
+      <h2 class="section-title">Subject Information</h2>
+      
+      <div class="info-row">
+        <div class="info-label">Appointed Subject:</div>
+        <div class="info-value"><%= subject.appointedSubject || 'Not specified' %></div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Current Teaching Subjects:</div>
+        <div class="info-value">
+          <% if (subject.currentTeachingSubjects && subject.currentTeachingSubjects.length > 0) { %>
+            <%= subject.currentTeachingSubjects.join(', ') %>
+          <% } else { %>
+            Not specified
+          <% } %>
+        </div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Interested Teaching Subjects:</div>
+        <div class="info-value">
+          <% if (subject.interestedTeachingSubjects && subject.interestedTeachingSubjects.length > 0) { %>
+            <%= subject.interestedTeachingSubjects.join(', ') %>
+          <% } else { %>
+            Not specified
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>This document was generated by the Teacher Management System.</p>
+      <p>Date: <%= new Date().toLocaleDateString() %> | Time: <%= new Date().toLocaleTimeString() %></p>
+    </footer>
+  </div>
+</body>
+</html>

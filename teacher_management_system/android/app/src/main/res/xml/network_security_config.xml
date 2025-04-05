@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Add your server IP address here -->
+        <domain includeSubdomains="true">145.223.21.62</domain>
+    </domain-config>
+</network-security-config>
