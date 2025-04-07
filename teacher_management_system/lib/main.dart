@@ -10,6 +10,8 @@ import 'package:open_file/open_file.dart';
 import 'dart:io';
 
 import 'package:teacher_management_system/add_teacher.dart';
+import 'package:teacher_management_system/all_teachers.dart';
+import 'package:teacher_management_system/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,12 +35,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Teacher Management System',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const TeacherSearchScreen(),
+      home: const SplashScreen(),
     );
   }
 }
@@ -180,6 +183,30 @@ class _TeacherSearchScreenState extends State<TeacherSearchScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Teacher Management System'),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'getAllTeachers') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AllTeachersScreen(),
+                  ),
+                ).then((result) {
+                  if (result == true) {
+                    _fetchAllTeachers();
+                  }
+                });
+              }
+            },
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem<String>(
+                value: 'getAllTeachers',
+                child: Text('Get All Teachers'),
+              ),
+            ],
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -475,7 +502,10 @@ class _TeacherDetailScreenState extends State<TeacherDetailScreen> {
 
       // Direct HTTP download
       try {
-        final response = await http.get(Uri.parse(downloadUrl));
+        final response = await http.get(Uri.parse(downloadUrl), headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/pdf',
+        });
 
         if (response.statusCode == 200) {
           // Save the file
@@ -749,22 +779,22 @@ class _TeacherDetailScreenState extends State<TeacherDetailScreen> {
                     'Family Information',
                     [
                       _buildInfoRow(
-                        'Kaalaathraya Name',
+                        'Name of the spouse',
                         _teacherData['family']['kalaathrayaName'] ??
                             'Not specified',
                       ),
                       _buildInfoRow(
-                        'Kaalaathraya Mobile',
+                        'Spouse\'s Mobile',
                         _teacherData['family']['kalaathrayaMobileNumber'] ??
                             'Not specified',
                       ),
                       _buildInfoRow(
-                        'Kaalaathraya Job',
+                        'Spouse\'s occupation',
                         _teacherData['family']['kalaathrayaJob'] ??
                             'Not specified',
                       ),
                       _buildInfoRow(
-                        'Workplace Address',
+                        'Spouse\'s Workplace Address',
                         _teacherData['family']['kalaathrayaWorkplaceAddress'] ??
                             'Not specified',
                       ),

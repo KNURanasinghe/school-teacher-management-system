@@ -977,7 +977,7 @@ class _AddTeacherScreenState extends State<AddTeacherScreen>
                         TextFormField(
                           controller: _kalaathrayaNameController,
                           decoration: const InputDecoration(
-                            labelText: 'Kaalaathraya Name',
+                            labelText: 'Name of the spouse',
                             border: OutlineInputBorder(),
                           ),
                         ),
@@ -987,7 +987,7 @@ class _AddTeacherScreenState extends State<AddTeacherScreen>
                         TextFormField(
                           controller: _kalaathrayaMobileController,
                           decoration: const InputDecoration(
-                            labelText: 'Kaalaathraya Mobile Number',
+                            labelText: 'Spouse\'s Mobile Number',
                             border: OutlineInputBorder(),
                           ),
                           keyboardType: TextInputType.phone,
@@ -998,7 +998,7 @@ class _AddTeacherScreenState extends State<AddTeacherScreen>
                         TextFormField(
                           controller: _kalaathrayaJobController,
                           decoration: const InputDecoration(
-                            labelText: 'Kaalaathraya Job',
+                            labelText: 'Spouse\'s occupation',
                             border: OutlineInputBorder(),
                           ),
                         ),
@@ -1008,7 +1008,7 @@ class _AddTeacherScreenState extends State<AddTeacherScreen>
                         TextFormField(
                           controller: _kalaathrayaWorkplaceController,
                           decoration: const InputDecoration(
-                            labelText: 'Kaalaathraya Workplace Address',
+                            labelText: 'Spouse\'s Workplace Address',
                             border: OutlineInputBorder(),
                           ),
                           maxLines: 2,
@@ -1275,7 +1275,8 @@ class _AddTeacherScreenState extends State<AddTeacherScreen>
                               child: const Text('Previous'),
                             ),
                             ElevatedButton.icon(
-                              onPressed: _formSubmitted ? null : _submitForm,
+                              // onPressed: _formSubmitted ? null : _submitForm,
+                              onPressed: _submitForm,
                               icon: const Icon(Icons.save),
                               label: const Text('Submit'),
                               style: ElevatedButton.styleFrom(
