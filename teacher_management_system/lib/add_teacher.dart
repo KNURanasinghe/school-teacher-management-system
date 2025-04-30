@@ -205,7 +205,7 @@ class _AddTeacherScreenState extends State<AddTeacherScreen>
       var request = http.MultipartRequest(
         'POST',
         Uri.parse(
-            'http://145.223.21.62:9000/api/teachers'), // For Android emulator
+            'http://151.106.125.212:9000/api/teachers'), // For Android emulator
         // For iOS simulator, use: Uri.parse('http://localhost:9000/api/teachers')
         // For actual deployment, use your server domain or IP
       );

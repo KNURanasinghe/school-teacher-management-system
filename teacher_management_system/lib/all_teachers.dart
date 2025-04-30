@@ -35,7 +35,7 @@ class _AllTeachersScreenState extends State<AllTeachersScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://145.223.21.62:9000/api/teachers/search'),
+        Uri.parse('http://151.106.125.212:9000/api/teachers/search'),
       );
 
       if (response.statusCode == 200) {
@@ -91,7 +91,7 @@ class _AllTeachersScreenState extends State<AllTeachersScreen> {
       );
 
       // Download URL for all teachers PDF
-      final downloadUrl = 'http://145.223.21.62:9000/api/teacher/all/pdf';
+      final downloadUrl = 'http://151.106.125.212:9000/api/teacher/all/pdf';
       print('Requesting PDF from: $downloadUrl');
 
       // Try to use the standard Download directory first
@@ -275,7 +275,7 @@ class _AllTeachersScreenState extends State<AllTeachersScreen> {
                         leading: teacher['photo'] != null
                             ? CircleAvatar(
                                 backgroundImage: NetworkImage(
-                                    'http://145.223.21.62:9000${teacher['photo']}'),
+                                    'http://151.106.125.212:9000${teacher['photo']}'),
                                 onBackgroundImageError: (_, __) =>
                                     const Icon(Icons.person),
                               )

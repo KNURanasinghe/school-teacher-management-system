@@ -91,7 +91,7 @@ class _TeacherSearchScreenState extends State<TeacherSearchScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://145.223.21.62:9000/api/teachers/search'),
+        Uri.parse('http://151.106.125.212:9000/api/teachers/search'),
       );
 
       if (response.statusCode == 200) {
@@ -134,7 +134,8 @@ class _TeacherSearchScreenState extends State<TeacherSearchScreen> {
       }
 
       final response = await http.get(
-        Uri.parse('http://145.223.21.62:9000/api/teachers/search$queryString'),
+        Uri.parse(
+            'http://151.106.125.212:9000/api/teachers/search$queryString'),
       );
 
       if (response.statusCode == 200) {
@@ -347,7 +348,7 @@ class TeacherListItem extends StatelessWidget {
         leading: teacher['photo'] != null
             ? CircleAvatar(
                 backgroundImage: NetworkImage(
-                    'http://145.223.21.62:9000${teacher['photo']}'),
+                    'http://151.106.125.212:9000${teacher['photo']}'),
                 onBackgroundImageError: (_, __) => const Icon(Icons.person),
               )
             : const CircleAvatar(child: Icon(Icons.person)),
@@ -390,7 +391,8 @@ class _TeacherDetailScreenState extends State<TeacherDetailScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://145.223.21.62:9000/api/teachers/${widget.teacherId}'),
+        Uri.parse(
+            'http://151.106.125.212:9000/api/teachers/${widget.teacherId}'),
       );
 
       if (response.statusCode == 200) {
@@ -449,7 +451,7 @@ class _TeacherDetailScreenState extends State<TeacherDetailScreen> {
       // Properly encode the teacher ID in the URL
       final teacherId = Uri.encodeComponent(widget.teacherId);
       final downloadUrl =
-          'http://145.223.21.62:9000/api/teachers/$teacherId/pdf';
+          'http://151.106.125.212:9000/api/teachers/$teacherId/pdf';
 
       // Try to use the standard Download directory first
       Directory? saveDir;
@@ -582,7 +584,8 @@ class _TeacherDetailScreenState extends State<TeacherDetailScreen> {
 
     try {
       final response = await http.delete(
-        Uri.parse('http://145.223.21.62:9000/api/teachers/${widget.teacherId}'),
+        Uri.parse(
+            'http://151.106.125.212:9000/api/teachers/${widget.teacherId}'),
       );
 
       if (response.statusCode == 200) {
@@ -702,7 +705,7 @@ class _TeacherDetailScreenState extends State<TeacherDetailScreen> {
                         ),
                     ],
                     photoUrl: _teacherData['personal']['photo'] != null
-                        ? 'http://145.223.21.62:9000${_teacherData['personal']['photo']}'
+                        ? 'http://151.106.125.212:9000${_teacherData['personal']['photo']}'
                         : null,
                   ),
 
